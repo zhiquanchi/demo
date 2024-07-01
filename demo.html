@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Sorted Bar Chart - FastAPI SSE</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+        }
+        #chart {
+            width: 95%;
+            height: 90%;
+            margin: 2% auto;
+            background-color: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #34495e;
+            color: white;
+            border-radius: 10px 10px 0 0;
+        }
+        .demo{
+            text-align: right;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+<!--    <div class="header">-->
+<!--        <h1>Real-time Performance Chart (FastAPI SSE)</h1>-->
+<!--    </div>-->
+    <div class="demo">
+        <button onclick="start()"> 演示</button>
+        <button onclick="reset()"> 重置 </button>
+    </div>
+
+    <div id="chart"></div>
+
+    <script>
+        let data = [];
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var chart = echarts.init(document.getElementById('chart'));
+
+            // 定义一组颜色
+            var colors = [
+                ['#83a6ed', '#1d57a0'], ['#6e92f3', '#2f54eb'], ['#7fc97f', '#2b8339'],
+                ['#beaed4', '#6b399c'], ['#fdc086', '#d7701e'], ['#ffff99', '#cca300'],
+                ['#386cb0', '#0a4a8b'], ['#f0027f', '#b30059'], ['#bf5b17', '#8c3d06'],
+                ['#666666', '#333333']
+            ];
+
+
+            function updateChart() {
+                // 对数据进行排序
+                data.sort((a, b) => b.value - a.value);
+
+                // 只显示前50条数据
+                var displayData = data.slice(0, 50);
+
+                var option = {
+                    title: {
+                        text: '实时竞拍排名',
+                        left: 'center',
+                        top: 20,
+                        textStyle: {
+                            color: '#34495e',
+                            fontSize: 24,
+                            fontWeight: 'bold'
+                        }
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'shadow'
+                        },
+                        formatter: function(params) {
+                            return params[0].name + ': ' + params[0].value;
+                        }
+                    },
+                    grid: {
+                        top: 80,
+                        bottom: 30,
+                        left: 100,
+                        right: 50
+                    },
+                    xAxis: {
+                        max: 'dataMax',
+                        axisLine: { show: false },
+                        axisTick: { show: false },
+                        axisLabel: { color: '#666' }
+                    },
+                    yAxis: {
+                        type: 'category',
+                        data: displayData.map(item => item.name),
+                        inverse: true,
+                        animationDuration: 300,
+                        animationDurationUpdate: 100,
+                        axisLine: { show: false },
+                        axisTick: { show: false },
+                        axisLabel: { color: '#666' }
+                    },
+                    series: [{
+                        realtimeSort: true,
+                        name: 'Value',
+                        type: 'bar',
+                        data: displayData,
+                        label: {
+                            show: true,
+                            position: 'right',
+                            valueAnimation: true,
+                            color: '#333',
+                            fontSize: 12
+                        },
+                        itemStyle: {
+                            borderRadius: [0, 4, 4, 0]
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                brightness: 0.2
+                            }
+                        },
+                        barWidth: '60%'
+                    }],
+                    animationDuration: 300,
+                    animationDurationUpdate: 100,
+                    animationEasing: 'cubicInOut',
+                    animationEasingUpdate: 'cubicInOut'
+                };
+
+                chart.setOption(option);
+            }
+
+            // 连接到 SSE
+            var eventSource = new EventSource("/stream");
+
+            eventSource.onmessage = function(event) {
+                var newData = JSON.parse(event.data);
+
+                // 查找现有数据或添加新数据
+                var existingItem = data.find(item => item.name === newData.name);
+                if (existingItem) {
+                    existingItem.value = newData.value;
+                } else {
+                    var colorIndex = data.length % colors.length;
+                    newData.itemStyle = {
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            {offset: 0, color: colors[colorIndex][0]},
+                            {offset: 1, color: colors[colorIndex][1]}
+                        ])
+                    };
+                    data.push(newData);
+                }
+
+                // 如果数据超过600条，移除最旧的数据
+                if (data.length > 600) {
+                    data.shift();
+                }
+
+                updateChart();
+            };
+
+            eventSource.onerror = function(error) {
+                console.error("EventSource failed:", error);
+                eventSource.close();
+            };
+
+            window.addEventListener('resize', function() {
+                chart.resize();
+            });
+        });
+
+        function reset() {
+            fetch('/reset', { method: 'POST' });
+            // 重置数
+            data = [];
+            // 重新加载页面
+            location.reload()
+            console.log('reset');
+        }
+
+        function start() {
+            fetch('/start', { method: 'POST' });
+            console.log('start');
+        }
+    </script>
+</body>
+</html>
