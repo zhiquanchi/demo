@@ -81,6 +81,7 @@ async def message_stream(response: Response):
                 data = {"name": key, "value": value}
                 yield json.dumps(data)
 
+
     return EventSourceResponse(event_generator())
 
 

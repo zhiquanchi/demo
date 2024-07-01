@@ -25,13 +25,20 @@ async def main(get_host=Depends(get_host)):
         <title>admin</title>
     </head>
     <body>
-        <form action="/admin/home" method="post">
-            <label for="username">username:</label>
-            <input type="text" id="username" name="username"><br><br>
-            <label for="password">password:</label>
-            <input type="password" id="password" name="password"><br><br>
-            <input type="submit" value="Submit">
-        </form>
+        <div style="text-align:center">
+            <form action="/admin/home" method="post">
+                <label for="username">username:</label>
+                <input type="text" id="username" name="username"><br><br>
+                <label for="password">password:</label>
+                <input type="password" id="password" name="password"><br><br>
+                <input type="submit" value="Submit">
+            </form>
+        </div>
+        
+        <div style="text-align:center">
+        账号和密码都是admin
+        </div>
+        
     </body>
     </html>
     """
