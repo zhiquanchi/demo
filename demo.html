@@ -18,7 +18,8 @@
             width: 95%;
             height: 90%;
             /*margin: 2% auto;*/
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.5);
+
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             border-radius: 10px;
         }
@@ -43,6 +44,7 @@
     <div class="demo">
         <button onclick="start()"> 演示</button>
         <button onclick="reset()"> 重置 </button>
+        <button onclick="changeBackground()"> 更换背景 </button>
     </div>
 
 
@@ -196,6 +198,23 @@
         function start() {
             fetch('/start', { method: 'POST' });
             console.log('start');
+        }
+
+        function changeBackground() {
+            //     用户选择需要更换的背景图片，用户的选择的图片是本机的图片
+            var file = document.createElement('input');
+            file.type = 'file';
+            file.accept = 'image/*';
+            file.click();
+            file.onchange = function () {
+                //     设置这个页面的背景图片
+                var reader = new FileReader();
+                reader.readAsDataURL(file.files[0]);
+                reader.onload = function () {
+                    document.body.style.backgroundImage = 'url(' + reader.result + ')';
+                }
+
+            }
         }
     </script>
 </body>
